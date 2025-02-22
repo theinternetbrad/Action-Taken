@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Lookup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #e3eafc, #f8f9ff);
+            color: #000000;
+            margin: 20px;
+            padding: 20px;
+        }
+        input {
+            margin-bottom: 10px;
+            padding: 10px;
+            width: 100%;
+            border-radius: 10px;
+            border: 2px solid #0056b3;
+            background-color: #ffffff;
+            color: #000000;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            cursor: pointer;
+        }
+        th {
+            background-color: #0056b3;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        button {
+            background-color: #0056b3;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #003d80;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>USPS Maintenance Action Taken</h1>
+    </div>
+    
+    <h2>Verb Code Lookup</h2>
+    <input type="text" id="verbSearch" placeholder="Search verb codes..." onkeyup="searchTable('verbTableBody')">
+    <button onclick="toggleTable('verbTableBody')">Show/Hide Verb Codes</button>
+    <table id="verbTable">
+        <thead>
+            <tr>
+                <th>Verb Code</th>
+                <th>Verb Description</th>
+            </tr>
+        </thead>
+        <tbody id="verbTableBody"></tbody>
+    </table>
+    
+    <h2>Noun Code Lookup</h2>
+    <input type="text" id="nounSearch" placeholder="Search noun codes..." onkeyup="searchTable('nounTableBody')">
+    <button onclick="toggleTable('nounTableBody')">Show/Hide Noun Codes</button>
+    <table id="nounTable">
+        <thead>
+            <tr>
+                <th>Noun Code</th>
+                <th>Noun Description</th>
+            </tr>
+        </thead>
+        <tbody id="nounTableBody"></tbody>
+    </table>
+    
+    <h2>Work Code Lookup</h2>
+    <input type="text" id="workSearch" placeholder="Search work codes..." onkeyup="searchTable('workTableBody')">
+    <button onclick="toggleTable('workTableBody')">Show/Hide Work Codes</button>
+    <table id="workTable">
+        <thead>
+            <tr>
+                <th>Work Code</th>
+                <th>Work Description</th>
+            </tr>
+        </thead>
+        <tbody id="workTableBody"></tbody>
+    </table>
+    
+    <h2>Bypass Code Lookup</h2>
+    <input type="text" id="bypassSearch" placeholder="Search bypass codes..." onkeyup="searchTable('bypassTableBody')">
+    <button onclick="toggleTable('bypassTableBody')">Show/Hide Bypass Codes</button>
+    <table id="bypassTable">
+        <thead>
+            <tr>
+                <th>Bypass Code</th>
+                <th>Bypass Description</th>
+            </tr>
+        </thead>
+        <tbody id="bypassTableBody"></tbody>
+    </table>
+    
+    <script>
+        async function loadCodes() {
+            const response = await fetch('codes.json');
+            const codes = await response.json();
+            populateTable('verbTableBody', codes.verbs);
+            populateTable('nounTableBody', codes.nouns);
+            populateTable('workTableBody', codes.workCodes);
+            populateTable('bypassTableBody', codes.bypassCodes);
+        }
+        
+        function populateTable(tableBodyId, data) {
+            let tableBody = document.getElementById(tableBodyId);
+            tableBody.innerHTML = "";
+            data.forEach(code => {
+                let row = `<tr onclick="populateSearch('${tableBodyId}', '${code.verbCode || code.nounCode || code.code}', '${code.verbDescription || code.nounDescription || code.description}')">
+                    <td>${code.verbCode || code.nounCode || code.code}</td>
+                    <td>${code.verbDescription || code.nounDescription || code.description}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+        
+        function searchTable(tableBodyId) {
+            let input = document.getElementById(tableBodyId.replace('TableBody', 'Search'));
+            let tableBody = document.getElementById(tableBodyId);
+            tableBody.style.display = "table-row-group";
+            let rows = tableBody.getElementsByTagName("tr");
+            Array.from(rows).forEach(row => {
+                row.style.display = row.innerText.toUpperCase().includes(input.value.toUpperCase()) ? "" : "none";
+            });
+        }
+        
+        function toggleTable(tableBodyId) {
+            let tableBody = document.getElementById(tableBodyId);
+            tableBody.style.display = (tableBody.style.display === "none" || tableBody.style.display === "") ? "table-row-group" : "none";
+        }
+        
+        function populateSearch(tableBodyId, code, description) {
+            let input = document.getElementById(tableBodyId.replace('TableBody', 'Search'));
+            input.value = `${code}: ${description}`;
+        }
+        
+        window.onload = function() {
+    loadCodes();
+    document.getElementById('verbTableBody').style.display = 'none';
+    document.getElementById('nounTableBody').style.display = 'none';
+    document.getElementById('workTableBody').style.display = 'none';
+    document.getElementById('bypassTableBody').style.display = 'none';
+};
+    </script>
+</body>
+</html>
