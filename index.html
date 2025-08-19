@@ -71,6 +71,19 @@
     <div class="header">
         <h1>USPS Maintenance Action Taken</h1>
     </div>
+
+    <h2>Breakdown Code Lookup</h2>
+<input type="text" id="breakdownSearch" placeholder="Search Breakdown codes..." onkeyup="searchTable('breakdownTableBody')">
+<button onclick="toggleTable('breakdownTableBody')">Show/Hide Breakdown Codes</button>
+<table id="actionTable">
+    <thead>
+        <tr>
+            <th>Breakdown Code</th>
+            <th>Breakdown Description</th>
+        </tr>
+    </thead>
+    <tbody id="breakdownTableBody"></tbody>
+</table>
     
     <h2>Verb Code Lookup</h2>
     <input type="text" id="verbSearch" placeholder="Search verb codes..." onkeyup="searchTable('verbTableBody')">
@@ -128,6 +141,7 @@
         async function loadCodes() {
             const response = await fetch('codes.json');
             const codes = await response.json();
+            populateTable('breakdownTableBody', codes.breakdownCause);
             populateTable('verbTableBody', codes.verbs);
             populateTable('nounTableBody', codes.nouns);
             populateTable('workTableBody', codes.workCodes);
@@ -168,6 +182,7 @@
         
         window.onload = function() {
     loadCodes();
+    document.getElementById('breakdownTableBody').style.display = 'none';
     document.getElementById('verbTableBody').style.display = 'none';
     document.getElementById('nounTableBody').style.display = 'none';
     document.getElementById('workTableBody').style.display = 'none';

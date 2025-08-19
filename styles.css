@@ -1,3 +1,4 @@
+
 /* General Page Styling */
 body {
     font-family: Arial, sans-serif;
@@ -22,7 +23,6 @@ body {
     display: inline-block;
     padding-bottom: 5px;
 }
-
 
 /* Search Box Styling */
 input {
