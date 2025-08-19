@@ -65,6 +65,12 @@
         .header h1 {
             font-size: 24px;
         }
+        #error-message {
+            color: red;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -73,20 +79,20 @@
     </div>
 
     <h2>Breakdown Code Lookup</h2>
-<input type="text" id="breakdownSearch" placeholder="Search Breakdown codes..." onkeyup="searchTable('breakdownTableBody')">
-<button onclick="toggleTable('breakdownTableBody')">Show/Hide Breakdown Codes</button>
-<table id="actionTable">
-    <thead>
-        <tr>
-            <th>Breakdown Code</th>
-            <th>Breakdown Description</th>
-        </tr>
-    </thead>
-    <tbody id="breakdownTableBody"></tbody>
-</table>
-    
+    <input type="text" id="breakdownSearch" placeholder="Search Breakdown codes..." onkeyup="searchTable('breakdownTableBody', 'breakdownSearch')">
+    <button onclick="toggleTable('breakdownTableBody')">Show/Hide Breakdown Codes</button>
+    <table id="actionTable">
+        <thead>
+            <tr>
+                <th>Breakdown Code</th>
+                <th>Breakdown Description</th>
+            </tr>
+        </thead>
+        <tbody id="breakdownTableBody"></tbody>
+    </table>
+
     <h2>Verb Code Lookup</h2>
-    <input type="text" id="verbSearch" placeholder="Search verb codes..." onkeyup="searchTable('verbTableBody')">
+    <input type="text" id="verbSearch" placeholder="Search verb codes..." onkeyup="searchTable('verbTableBody', 'verbSearch')">
     <button onclick="toggleTable('verbTableBody')">Show/Hide Verb Codes</button>
     <table id="verbTable">
         <thead>
@@ -97,9 +103,9 @@
         </thead>
         <tbody id="verbTableBody"></tbody>
     </table>
-    
+
     <h2>Noun Code Lookup</h2>
-    <input type="text" id="nounSearch" placeholder="Search noun codes..." onkeyup="searchTable('nounTableBody')">
+    <input type="text" id="nounSearch" placeholder="Search noun codes..." onkeyup="searchTable('nounTableBody', 'nounSearch')">
     <button onclick="toggleTable('nounTableBody')">Show/Hide Noun Codes</button>
     <table id="nounTable">
         <thead>
@@ -110,9 +116,9 @@
         </thead>
         <tbody id="nounTableBody"></tbody>
     </table>
-    
+
     <h2>Work Code Lookup</h2>
-    <input type="text" id="workSearch" placeholder="Search work codes..." onkeyup="searchTable('workTableBody')">
+    <input type="text" id="workSearch" placeholder="Search work codes..." onkeyup="searchTable('workTableBody', 'workSearch')">
     <button onclick="toggleTable('workTableBody')">Show/Hide Work Codes</button>
     <table id="workTable">
         <thead>
@@ -123,9 +129,9 @@
         </thead>
         <tbody id="workTableBody"></tbody>
     </table>
-    
+
     <h2>Bypass Code Lookup</h2>
-    <input type="text" id="bypassSearch" placeholder="Search bypass codes..." onkeyup="searchTable('bypassTableBody')">
+    <input type="text" id="bypassSearch" placeholder="Search bypass codes..." onkeyup="searchTable('bypassTableBody', 'bypassSearch')">
     <button onclick="toggleTable('bypassTableBody')">Show/Hide Bypass Codes</button>
     <table id="bypassTable">
         <thead>
@@ -136,58 +142,97 @@
         </thead>
         <tbody id="bypassTableBody"></tbody>
     </table>
-    
+
+    <div id="error-message"></div>
+
     <script>
+        let codesData = {};
+
         async function loadCodes() {
-            const response = await fetch('codes.json');
-            const codes = await response.json();
-            populateTable('breakdownTableBody', codes.breakdownCause);
-            populateTable('verbTableBody', codes.verbs);
-            populateTable('nounTableBody', codes.nouns);
-            populateTable('workTableBody', codes.workCodes);
-            populateTable('bypassTableBody', codes.bypassCodes);
+            try {
+                const response = await fetch('codes.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                codesData = await response.json();
+                populateTables();
+            } catch (error) {
+                console.error('Failed to load codes.json:', error);
+                document.getElementById('error-message').textContent = 'Error: Could not load the code data. Please make sure all files are in the same folder and you are running this page from a local web server.';
+            }
+        }
+
+        function populateTables() {
+            populateTable('breakdownTableBody', codesData.breakdownCause, 'breakdownCode', 'description');
+            populateTable('verbTableBody', codesData.verbs, 'verbCode', 'verbDescription');
+            populateTable('nounTableBody', codesData.nouns, 'nounCode', 'nounDescription');
+            populateTable('workTableBody', codesData.workCodes, 'code', 'description');
+            populateTable('bypassTableBody', codesData.bypassCodes, 'code', 'description');
         }
         
-        function populateTable(tableBodyId, data) {
-            let tableBody = document.getElementById(tableBodyId);
-            tableBody.innerHTML = "";
-            data.forEach(code => {
-                let row = `<tr onclick="populateSearch('${tableBodyId}', '${code.verbCode || code.nounCode || code.code}', '${code.verbDescription || code.nounDescription || code.description}')">
-                    <td>${code.verbCode || code.nounCode || code.code}</td>
-                    <td>${code.verbDescription || code.nounDescription || code.description}</td>
-                </tr>`;
-                tableBody.innerHTML += row;
-            });
+        function populateTable(tableBodyId, data, codeKey, descriptionKey) {
+            const tableBody = document.getElementById(tableBodyId);
+            tableBody.innerHTML = '';
+            if (data) {
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    const codeCell = document.createElement('td');
+                    codeCell.textContent = item[codeKey];
+                    const descriptionCell = document.createElement('td');
+                    descriptionCell.textContent = item[descriptionKey];
+                    
+                    row.appendChild(codeCell);
+                    row.appendChild(descriptionCell);
+                    
+                    row.addEventListener('click', () => {
+                        populateSearch(tableBodyId, item[codeKey], item[descriptionKey]);
+                    });
+                    
+                    tableBody.appendChild(row);
+                });
+            }
         }
         
-        function searchTable(tableBodyId) {
-            let input = document.getElementById(tableBodyId.replace('TableBody', 'Search'));
+        function searchTable(tableBodyId, searchInputId) {
+            let input = document.getElementById(searchInputId);
+            let filter = input.value.toUpperCase();
             let tableBody = document.getElementById(tableBodyId);
+            
+            // Show the table body while searching
             tableBody.style.display = "table-row-group";
+
             let rows = tableBody.getElementsByTagName("tr");
+            
             Array.from(rows).forEach(row => {
-                row.style.display = row.innerText.toUpperCase().includes(input.value.toUpperCase()) ? "" : "none";
+                const textContent = row.textContent || row.innerText;
+                if (textContent.toUpperCase().includes(filter)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
             });
         }
         
         function toggleTable(tableBodyId) {
             let tableBody = document.getElementById(tableBodyId);
-            tableBody.style.display = (tableBody.style.display === "none" || tableBody.style.display === "") ? "table-row-group" : "none";
+            let isVisible = tableBody.style.display !== "none";
+            tableBody.style.display = isVisible ? "none" : "table-row-group";
         }
         
         function populateSearch(tableBodyId, code, description) {
-            let input = document.getElementById(tableBodyId.replace('TableBody', 'Search'));
+            let inputId = tableBodyId.replace('TableBody', 'Search');
+            let input = document.getElementById(inputId);
             input.value = `${code}: ${description}`;
         }
         
         window.onload = function() {
-    loadCodes();
-    document.getElementById('breakdownTableBody').style.display = 'none';
-    document.getElementById('verbTableBody').style.display = 'none';
-    document.getElementById('nounTableBody').style.display = 'none';
-    document.getElementById('workTableBody').style.display = 'none';
-    document.getElementById('bypassTableBody').style.display = 'none';
-};
+            loadCodes();
+            document.getElementById('breakdownTableBody').style.display = 'none';
+            document.getElementById('verbTableBody').style.display = 'none';
+            document.getElementById('nounTableBody').style.display = 'none';
+            document.getElementById('workTableBody').style.display = 'none';
+            document.getElementById('bypassTableBody').style.display = 'none';
+        }
     </script>
 </body>
 </html>
